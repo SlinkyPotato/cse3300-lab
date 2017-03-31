@@ -1,0 +1,34 @@
+#IncludeRegexLine: ^[ 	]*#[ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+P:/Projects/cse3300-lab/student.c
+stdio.h
+-
+string.h
+-
+ctype.h
+-
+errno.h
+-
+assert.h
+-
+netdb.h
+-
+sys/types.h
+-
+sys/param.h
+-
+sys/socket.h
+-
+netinet/in.h
+-
+time.h
+-
+sys/time.h
+-
+
