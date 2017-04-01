@@ -39,7 +39,6 @@ static char *RCSId = "$Id: c-client.c,v 1.1 1997/01/19 20:34:49 calvert Exp $";
 #define SVR_PORT  3300
 #define SVR_ALTPORT  3301
 /* Port # of lab 3 server */
-#define SVR_IP_PORT  "137.99.11.9-3300" // given server IP and PORT
 
 /***************************************************************************/
 /***************************************************************************/
@@ -165,7 +164,7 @@ char* nextTokenFromString(char* words, char* token) {
 
 int main(int argc, char **argv) {
 
-  int mySocket;
+  int mySocket, psock;
   struct sockaddr_in destAddr, myAddr;
   int lineSize, myPort;
   int sizeofmyAddr, sizeofdestAddr;
@@ -180,7 +179,8 @@ int main(int argc, char **argv) {
    * to the server.  Set up the destination address information.
    ************************************************************/
 
-  if ((mySocket = socket(AF_INET, SOCK_STREAM, 0)) < 0) die("couldn't allocate socket");
+  if ((mySocket = socket(AF_INET, SOCK_STREAM, 0)) < 0) die("couldn't allocate socket"); // exercise 0 socket
+  if ((psock = socket(AF_INET, SOCK_STREAM, 0)) < 0) die ("couldn't allocate socket"); // exercise 1 socket
 
   /**************************************************************
    * Make the connection
@@ -215,6 +215,21 @@ int main(int argc, char **argv) {
 
   // Generate request string
   sprintf(msgbuf, "ex0 %s %s %d %s\n", saddrbuf, addrbuf, USERNUM, IDNAME);
+
+  /**********************************************************************
+  * Exercise 1 make the connection
+  ***********************************************************************/
+  sprintf(bindAddrbuf, "%s-%d", SVR_ADDR, INADDR_ANY);
+  StringToSockaddr(bindAddrbuf, &bindMyAddr)
+
+  // Get binded sock address
+  if (getsockname(psock, (struct sockaddr *) &bindMyAddr, &sizeofmyAddr) < 0) {
+  	printf("getsockname failed on psock\n");
+  	bindAddrbuf[0] = (char) 0;
+  } else {
+  	SockaddrToString(bindAddrbuf, &bindMyAddr);
+  	printf("Binded port: %s\n", bindAddrbuf);
+  }
 
 /*
  * your code goes here -- hint, use "send"
