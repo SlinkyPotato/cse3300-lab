@@ -39,7 +39,7 @@ static char *RCSId = "$Id: c-client.c,v 1.1 1997/01/19 20:34:49 calvert Exp $";
 #define SVR_PORT  3300
 #define SVR_ALTPORT  3301
 /* Port # of lab 3 server */
-#define SVR_IP_PORT  "137.99.11.9-3300"
+#define SVR_IP_PORT  "137.99.11.9-3300" // given server IP and PORT
 
 /***************************************************************************/
 /***************************************************************************/
@@ -148,19 +148,19 @@ int SockaddrToString(char *string, struct sockaddr_in *ss) {
  * Obtain the value after the specified token from string
  */
 char* nextTokenFromString(char* words, char* token) {
-	char* foundWord;
-	char* word = strtok(words, " ");
-	int isNextToken = 0;
-	while (word != NULL) {
-		if (isNextToken == 1) {
-			foundWord = word;
-			isNextToken = 0;
-			break;
+	char* foundWord; // pointer to store the found word
+	char* word = strtok(words, " "); // get the first word before the specified split
+	int isNextToken = 0; // true if the specified token is found
+	while (word != NULL) { // keep looping until all tokens after split have been processed
+		if (isNextToken == 1) { // if the token was found before the current iteration
+			foundWord = word; // the next token after the specified token is obtained
+			isNextToken = 0; // set the counter to zero
+			break; // break out earlier for faster processing
 		}
-		if (strcmp(token, word) == 0) isNextToken = 1;
-		word = strtok(NULL, " ");
+		if (strcmp(token, word) == 0) isNextToken = 1; // set the flag to true if the current token matches specified token
+		word = strtok(NULL, " "); // continue to the next token
 	}
-	return foundWord;
+	return foundWord; // return either NULL or the found token
 }
 
 int main(int argc, char **argv) {
@@ -173,7 +173,7 @@ int main(int argc, char **argv) {
   char servernumBuf[BUFSIZE]; // initial server nubmer response
   char recServernum[BUFSIZE]; // after ack response servernum+1
 
-  char hostName[MAXHOSTNAMELEN + 1];
+  char hostName[MAXHOSTNAMELEN + 1]; // Not used...
 
   /***********************************************************
    * Create a socket to be the endpoint of the connection
@@ -223,7 +223,6 @@ int main(int argc, char **argv) {
 /*
  * Get the reply, first the greeting, then the random number.
  */
-// printf("%s", msgbuf);
   int sendResult = send(mySocket, msgbuf, sizeof(msgbuf), 0);
   if (sendResult < 0) die("failed to send to socket");
 
@@ -249,12 +248,15 @@ int main(int argc, char **argv) {
   	die("");
   }
 
+  // display the server response on connection
   printf("%s\n", inbuf);
 
 	/* dont forget to get the random number */
 	/*----------------- insert code ---------------------------*/
 	// split string by white space
 	char* obtained = nextTokenFromString(inbuf, IDNAME);
+
+	// set servernum (random number)
 	strcpy(servernumBuf, obtained);
 	printf("Random Number: %s\n", servernumBuf);
 
@@ -288,7 +290,9 @@ int main(int argc, char **argv) {
   	die("");
   }
 
+  // display the received ACK response
   printf("Received ACK: %s\n", inbuf);
+  
   // Check servernum+1
   obtained = nextTokenFromString(inbuf, "OK");
   strcpy(recServernum, obtained);
@@ -296,6 +300,8 @@ int main(int argc, char **argv) {
 
 /* now close the connection -- hint -- use close() */
 /*----------------- insert code ---------------------------*/
+
+  // all values needed should have been saved, close the connection
   close(mySocket);
   return 0;
 }
