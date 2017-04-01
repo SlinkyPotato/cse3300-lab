@@ -1,3 +1,4 @@
+#include <stdlib.h> // fixes built-in error warnings
 #include <stdio.h>  /* for NULL */
 #include <string.h>  /* for  strtok() */
 #include <ctype.h>  /* for atoi() */
@@ -31,14 +32,14 @@ static char *RCSId = "$Id: c-client.c,v 1.1 1997/01/19 20:34:49 calvert Exp $";
 #define BUFSIZE    256
 
 
-#define IDNAME  "W.H.Derek"
-#define USERNUM 8888
+#define IDNAME  "B..Patino"
+#define USERNUM 3462
 
 #define SVR_ADDR  "tao.ite.uconn.edu"  /* server name */
 #define SVR_PORT  3300
+#define SVR_ALTPORT  3301
 /* Port # of lab 3 server */
-
-
+#define SVR_IP_PORT  "137.99.11.9-3300"
 
 /***************************************************************************/
 /***************************************************************************/
@@ -91,8 +92,7 @@ int StringToSockaddr(char *name, struct sockaddr_in *address) {
    * If so, we assume "w.x.y.z-port"
    * If not, we assume "hostname-port" */
   if (isdigit(cp[0])) {
-    if (sscanf(cp, "%d.%d.%d.%d-%d", &a, &b, &c, &d, &p) != 5)
-      return -2;
+    if (sscanf(cp, "%d.%d.%d.%d-%d", &a, &b, &c, &d, &p) != 5) return -2;
 
     address->sin_addr.s_addr = htonl(a << 24 | b << 16 | c << 8 | d);
     address->sin_port = htons(p);
@@ -144,6 +144,25 @@ int SockaddrToString(char *string, struct sockaddr_in *ss) {
   return 1;
 }
 
+/*
+ * Obtain the value after the specified token from string
+ */
+char* nextTokenFromString(char* words, char* token) {
+	char* foundWord;
+	char* word = strtok(words, " ");
+	int isNextToken = 0;
+	while (word != NULL) {
+		if (isNextToken == 1) {
+			foundWord = word;
+			isNextToken = 0;
+			break;
+		}
+		if (strcmp(token, word) == 0) isNextToken = 1;
+		word = strtok(NULL, " ");
+	}
+	return foundWord;
+}
+
 int main(int argc, char **argv) {
 
   int mySocket;
@@ -151,6 +170,8 @@ int main(int argc, char **argv) {
   int lineSize, myPort;
   int sizeofmyAddr, sizeofdestAddr;
   char inbuf[BUFSIZE], msgbuf[BUFSIZE], addrbuf[BUFSIZE], saddrbuf[BUFSIZE];
+  char servernumBuf[BUFSIZE]; // initial server nubmer response
+  char recServernum[BUFSIZE]; // after ack response servernum+1
 
   char hostName[MAXHOSTNAMELEN + 1];
 
@@ -159,21 +180,22 @@ int main(int argc, char **argv) {
    * to the server.  Set up the destination address information.
    ************************************************************/
 
-  if ((mySocket = socket(AF_INET, SOCK_STREAM, 0)) < 0)
-    die("couldn't allocate socket");
-
-
+  if ((mySocket = socket(AF_INET, SOCK_STREAM, 0)) < 0) die("couldn't allocate socket");
 
   /**************************************************************
    * Make the connection
    ****************************************************************/
+  
+  // ii
   sprintf(addrbuf, "%s-%d", SVR_ADDR, SVR_PORT);
   StringToSockaddr(addrbuf, &destAddr);
-  if (connect(mySocket, (struct sockaddr *) &destAddr, sizeof(destAddr)) < 0)
-    die("failed to connect to server");
+
+  // iii
+  if (connect(mySocket, (struct sockaddr *) &destAddr, sizeof(destAddr)) < 0) die("failed to connect to server");
 
   printf("connected to server at %s\n", getTime());
 
+  // iv
   sizeofmyAddr = sizeof(myAddr);
   if (getsockname(mySocket, (struct sockaddr *) &myAddr, &sizeofmyAddr) < 0) {
     printf("getsockname failed on mySocket!\n");
@@ -190,7 +212,9 @@ int main(int argc, char **argv) {
   } else {
     SockaddrToString(saddrbuf, &destAddr);
   }
-  sprintf(msgbuf, "EX0 %s %s %d %s\n", saddrbuf, addrbuf, USERNUM, IDNAME);
+
+  // Generate request string
+  sprintf(msgbuf, "ex0 %s %s %d %s\n", saddrbuf, addrbuf, USERNUM, IDNAME);
 
 /*
  * your code goes here -- hint, use "send"
@@ -199,19 +223,79 @@ int main(int argc, char **argv) {
 /*
  * Get the reply, first the greeting, then the random number.
  */
+// printf("%s", msgbuf);
+  int sendResult = send(mySocket, msgbuf, sizeof(msgbuf), 0);
+  if (sendResult < 0) die("failed to send to socket");
 
 /* get the greeting  -- hint -- use "recv"
  */
 /*----------------- insert code ---------------------------*/
-/* dont forget to get the random number */
-/*----------------- insert code ---------------------------*/
+
+  int receiveResult = recv(mySocket, inbuf, sizeof(inbuf), 0);
+  if (receiveResult < 0) die("failed to receive from socket");
+  inbuf[receiveResult] = '\0'; // terminate string
+
+  // Check if OK exists
+  if (strstr(inbuf, "OK") == NULL) {
+  	printf("errror: Not OK\n%s\n", inbuf);
+  	die("");
+  }
+
+  // Check usernum+1
+  char recUsernum[BUFSIZE];
+  sprintf(recUsernum, "%d", (USERNUM + 1));
+  if (strstr(inbuf, recUsernum) == NULL) {
+  	printf("error: Missing usernum+1\n%s\n", inbuf);
+  	die("");
+  }
+
+  printf("%s\n", inbuf);
+
+	/* dont forget to get the random number */
+	/*----------------- insert code ---------------------------*/
+	// split string by white space
+	char* obtained = nextTokenFromString(inbuf, IDNAME);
+	strcpy(servernumBuf, obtained);
+	printf("Random Number: %s\n", servernumBuf);
+
 /* parse out the servernum from the reply */
 /*----------------- insert code ---------------------------*/
+
+	// Convert servernum to int
+	int servernum = strtol(servernumBuf, (char **)NULL, 10);
+
 /* construct and send the client ack string*/
 /*----------------- insert code ---------------------------*/
+
+	// Construct ACK
+  sprintf(msgbuf, "ex0 %d %d \n", USERNUM+2, servernum+1);
+
+  // Send ACK
+  int ackResult = send(mySocket, msgbuf, sizeof(msgbuf), 0);
+  if (ackResult < 0) die("faield to send ACK to socket");
+
 /* wait for reply */
 /*----------------- insert code ---------------------------*/
+
+  // Check receive result
+  int ackReceiveResult = recv(mySocket, inbuf, sizeof(inbuf), 0);
+  if (ackReceiveResult < 0) die("failed to receive from socket");
+  inbuf[ackReceiveResult] = '\0'; // terminate string
+
+  // Verify that OK was received
+  if (strstr(inbuf, "OK") == NULL) {
+  	printf("error: Not OK\n%s\n", inbuf);
+  	die("");
+  }
+
+  printf("Received ACK: %s\n", inbuf);
+  // Check servernum+1
+  obtained = nextTokenFromString(inbuf, "OK");
+  strcpy(recServernum, obtained);
+  printf("Received servernum+1: %s", recServernum);
+
 /* now close the connection -- hint -- use close() */
 /*----------------- insert code ---------------------------*/
+  close(mySocket);
   return 0;
 }
