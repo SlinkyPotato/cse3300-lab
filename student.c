@@ -304,7 +304,7 @@ int main(int argc, char **argv) {
   int servernum = strtol(servernumBuf, (char **)NULL, 10);
   
   // call accept()
-  newsock = accept(psock, (struct sockaddr *) &freeAddr, &sizeoffreeAddr);
+  newsock = accept(psock, (struct sockaddr *) addrbuf, &sizeofmyAddr);
   if (newsock < 0) {
     close(psock);
     close(mySocket);
@@ -313,14 +313,14 @@ int main(int argc, char **argv) {
   }
 
   // call recv on newsock to get new random number from server or until it returns zero
-  int psockRecv = recv(newsock, inbuf, sizeof(inbuf), 0);
+  /*int psockRecv = recv(newsock, inbuf, sizeof(inbuf), 0);
   if (psockRecv < 0) {
     close(psock);
     close(mySocket);
     printf("error: receiving packets\n");
     exit(1);
   }
-  inbuf[psockRecv] = '\0'; // terminal string
+  inbuf[psockRecv] = '\0'; // terminal string*/
 
   // Verify random number has been received
 
